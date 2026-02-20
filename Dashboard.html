@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>職安衛推升項目管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --white:#ffffff;--off:#f5f5f3;--gray-50:#f3f3f1;--gray-100:#eaeae8;
+  --gray-200:#d5d5d3;--gray-300:#b5b5b2;--gray-400:#888886;--gray-500:#5a5a58;
+  --black:#0f0f0e;--ink:#1c1c1a;--ink2:#2c2c2a;
+  --red:#c0112e;--red-dark:#96091f;--red-pale:#fef1f3;--red-tint:#fadddf;
+  --orange:#b84e00;--orange-pale:#fef5ee;--orange-tint:#fbd9be;
+  --green:#16603a;--green-pale:#f0faf5;--green-tint:#c8e8d6;
+  --blue:#0e3d9e;--blue-pale:#f0f4fd;--blue-tint:#c4d4f2;
+  --purple:#5b21b6;--purple-pale:#f5f3ff;--purple-tint:#ddd6fe;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07);
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.09);
+  --sans:'Noto Sans TC',sans-serif;--serif:'Noto Serif TC',serif;--mono:'IBM Plex Mono',monospace;
+  --r:4px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--off);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.6}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--gray-100)}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:9999;background:var(–off);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-wrap{display:grid;grid-template-columns:360px 1fr;max-width:800px;width:100%;border:2px solid var(–black);background:var(–white);box-shadow:8px 8px 0 var(–red);animation:lIn .35s cubic-bezier(.22,1,.36,1)}
+@keyframes lIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.login-left{background:var(–black);padding:48px 40px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-left::before{content:’’;position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border:36px solid var(–red);border-radius:50%;opacity:.12}
+.login-left::after{content:’’;position:absolute;top:0;left:0;right:0;height:4px;background:var(–red)}
+.l-brand{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.l-brand-icon{width:40px;height:40px;border:2px solid var(–red);display:flex;align-items:center;justify-content:center;font-size:18px}
+.l-brand-name{font-family:var(–serif);font-size:13px;font-weight:700;color:var(–white);line-height:1.3;letter-spacing:.02em}
+.l-headline{font-family:var(–serif);font-size:22px;font-weight:700;line-height:1.4;color:var(–white);margin-bottom:14px}
+.l-headline em{color:var(–red);font-style:normal}
+.l-tagline{font-size:12px;color:var(–gray-400);line-height:1.75}
+.l-foot{font-size:10px;color:var(–gray-500);letter-spacing:.04em;margin-top:auto;padding-top:28px}
+.login-right{padding:44px 40px;display:flex;flex-direction:column;justify-content:center}
+.lr-title{font-family:var(–serif);font-size:18px;font-weight:700;color:var(–ink);margin-bottom:4px}
+.lr-sub{font-size:12px;color:var(–gray-400);margin-bottom:28px}
+.l-tabs{display:flex;border:2px solid var(–black);margin-bottom:24px}
+.l-tab{flex:1;padding:9px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(–gray-400);font-family:var(–sans);transition:all .15s;letter-spacing:.06em;text-transform:uppercase}
+.l-tab.active{background:var(–black);color:var(–white)}
+.l-tab:not(.active):hover{background:var(–gray-50)}
+.lf-guest,.lf-admin{display:none}.lf-guest.show,.lf-admin.show{display:block}
+.perm-box{border:1px solid var(–gray-200);border-left:3px solid var(–black);padding:13px 15px;margin-bottom:22px;background:var(–gray-50)}
+.perm-box-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(–gray-400);margin-bottom:9px}
+.perm-item{font-size:12px;color:var(–gray-500);display:flex;align-items:center;gap:8px;padding:2px 0}
+.perm-item.ok::before{content:‘✓’;color:var(–green);font-weight:700;width:10px}
+.perm-item.no::before{content:‘✗’;color:var(–red);font-weight:700;width:10px}
+.ff{margin-bottom:14px}
+.ff label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(–gray-400);margin-bottom:5px}
+.ff input{width:100%;border:2px solid var(–gray-200);background:var(–white);color:var(–ink);font-family:var(–sans);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;border-radius:var(–r)}
+.ff input:focus{border-color:var(–black)}
+.l-err{border-left:3px solid var(–red);background:var(–red-pale);padding:9px 13px;font-size:12px;color:var(–red);margin-bottom:12px;display:none}
+.l-err.show{display:block}
+.l-btn{width:100%;padding:12px;border:2px solid var(–black);background:var(–black);color:var(–white);font-family:var(–sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.06em;text-transform:uppercase;border-radius:var(–r)}
+.l-btn:hover{background:var(–ink2)}
+.l-btn.guest{background:var(–white);color:var(–black)}.l-btn.guest:hover{background:var(–gray-50)}
+.l-btn.admin{background:var(–red);border-color:var(–red)}.l-btn.admin:hover{background:var(–red-dark);border-color:var(–red-dark)}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:58px;background:var(–white);border-bottom:1px solid var(–gray-200);display:flex;align-items:stretch;box-shadow:var(–shadow-sm)}
+.nav-brand{display:flex;align-items:center;gap:11px;padding:0 22px;border-right:1px solid var(–gray-200);background:var(–black);min-width:200px}
+.nb-icon{width:26px;height:26px;border:1.5px solid var(–red);display:flex;align-items:center;justify-content:center;font-size:12px}
+.nb-text{font-family:var(–serif);font-size:13px;font-weight:700;color:var(–white);line-height:1.2}
+.nb-sub{font-size:9px;color:var(–gray-400);letter-spacing:.04em}
+.nav-tabs{display:flex;align-items:stretch;flex:1;padding-left:4px}
+.nav-tab{display:flex;align-items:center;padding:0 16px;font-size:11px;font-weight:700;color:var(–gray-400);cursor:pointer;border:none;background:none;font-family:var(–sans);border-bottom:3px solid transparent;transition:all .15s;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.nav-tab:hover{color:var(–ink);background:var(–gray-50)}
+.nav-tab.active{color:var(–red);border-bottom-color:var(–red)}
+.nav-tab.admin-only{display:none}
+.nav-right{display:flex;align-items:stretch;margin-left:auto;border-left:1px solid var(–gray-200)}
+.nav-role{display:flex;align-items:center;gap:7px;padding:0 16px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(–gray-400);border-right:1px solid var(–gray-200)}
+.nav-role .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.nav-role.admin{color:var(–red)}.nav-role.admin .dot{background:var(–red)}
+.nav-role.guest .dot{background:var(–gray-300)}
+.nav-logout{height:100%;padding:0 16px;border:none;background:transparent;font-family:var(–sans);font-size:10px;font-weight:700;color:var(–gray-400);cursor:pointer;transition:all .15s;letter-spacing:.05em;text-transform:uppercase}
+.nav-logout:hover{background:var(–red-pale);color:var(–red)}
+
+/* LAYOUT */
+.main{padding-top:58px;min-height:100vh;display:none}.main.visible{display:block}
+.page{display:none;padding:0 0 80px}.page.active{display:block}
+.page-banner{background:var(–white);border-bottom:1px solid var(–gray-200);padding:24px 32px 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.pb-left{display:flex;align-items:flex-start;gap:14px}
+.pb-bar{width:4px;min-height:44px;background:var(–red);flex-shrink:0}
+.pb-eye{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(–red);margin-bottom:3px}
+.pb-title{font-family:var(–serif);font-size:20px;font-weight:700;color:var(–ink);letter-spacing:.02em}
+.pb-sub{font-size:11px;color:var(–gray-400);margin-top:2px}
+.pb-actions{display:flex;gap:9px;align-items:center;flex-shrink:0}
+.content{padding:24px 32px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:24px;border:2px solid var(–black);overflow:hidden}
+.stat-card{background:var(–white);padding:18px 16px 14px;border-right:1px solid var(–black);position:relative;transition:background .12s;cursor:pointer}
+.stat-card:last-child{border-right:none}
+.stat-card::before{content:’’;position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.s-total::before{background:var(–black)}
+.stat-card.s-exec::before{background:var(–green)}
+.stat-card.s-pending::before{background:var(–orange)}
+.stat-card.s-dev::before{background:var(–blue)}
+.stat-card.s-plan::before{background:var(–purple)}
+.stat-card:hover{background:var(–gray-50)}
+.stat-num{font-family:var(–mono);font-size:32px;font-weight:600;line-height:1;margin:4px 0 7px}
+.stat-card.s-total .stat-num{color:var(–black)}
+.stat-card.s-exec .stat-num{color:var(–green)}
+.stat-card.s-pending .stat-num{color:var(–orange)}
+.stat-card.s-dev .stat-num{color:var(–blue)}
+.stat-card.s-plan .stat-num{color:var(–purple)}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(–gray-400)}
+
+/* AXIS TABS */
+.axis-tabs{display:flex;gap:0;margin-bottom:20px;border:1px solid var(–gray-200);background:var(–white);overflow:hidden}
+.axis-tab{flex:1;padding:10px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(–gray-400);font-family:var(–sans);transition:all .15s;border-right:1px solid var(–gray-200);letter-spacing:.03em;text-align:center}
+.axis-tab:last-child{border-right:none}
+.axis-tab.active{background:var(–black);color:var(–white)}
+.axis-tab:not(.active):hover{background:var(–gray-50);color:var(–ink)}
+
+/* FILTER BAR */
+.filter-bar{background:var(–white);border:1px solid var(–gray-200);padding:11px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.filter-bar input,.filter-bar select{background:var(–white);border:1px solid var(–gray-200);color:var(–ink);font-family:var(–sans);font-size:12px;padding:6px 10px;outline:none;transition:border-color .15s;-webkit-appearance:none;border-radius:var(–r)}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(–black)}
+.filter-bar input{width:200px}
+.filter-bar select{cursor:pointer;padding-right:22px;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘10’ height=‘6’ viewBox=‘0 0 10 6’%3E%3Cpath d=‘M1 1l4 4 4-4’ stroke=’%23888886’ stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center}
+.fl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(–gray-400)}
+.fdiv{width:1px;height:18px;background:var(–gray-200);flex-shrink:0}
+.filter-count{margin-left:auto;font-size:11px;color:var(–gray-400)}
+.filter-count b{color:var(–black);font-family:var(–mono)}
+
+/* BUTTONS */
+.btn{border:none;font-family:var(–sans);font-size:10px;font-weight:700;padding:8px 16px;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;border-radius:var(–r)}
+.btn-blk{background:var(–black);color:var(–white);border:2px solid var(–black)}.btn-blk:hover{background:var(–ink2)}
+.btn-red{background:var(–red);color:var(–white);border:2px solid var(–red)}.btn-red:hover{background:var(–red-dark)}
+.btn-xls{background:var(–white);color:var(–green);border:2px solid var(–green)}.btn-xls:hover{background:var(–green-pale)}
+.btn-ghost{background:var(–white);color:var(–gray-500);border:1px solid var(–gray-200)}.btn-ghost:hover{border-color:var(–black);color:var(–ink)}
+.btn-sm{padding:5px 12px;font-size:9px}
+.bti{width:28px;height:28px;padding:0;font-size:12px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(–gray-200);background:var(–white);cursor:pointer;transition:all .12s;border-radius:var(–r)}
+.bti:hover{border-color:var(–black)}
+.bti.e:hover{border-color:var(–blue);background:var(–blue-pale)}
+.bti.d:hover{border-color:var(–red);background:var(–red-pale)}
+
+/* CARDS GRID */
+.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:1px;background:var(–gray-200)}
+.sec-div{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:16px 0 6px;background:transparent}
+.sec-bar{width:3px;height:13px;flex-shrink:0}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap}
+.sec-line{flex:1;height:1px;background:var(–gray-200)}
+.sec-cnt{font-size:10px;font-weight:700;font-family:var(–mono);color:var(–gray-400)}
+
+/* ITEM CARD */
+.item-card{background:var(–white);display:flex;flex-direction:column;transition:box-shadow .18s;position:relative}
+.item-card:hover{box-shadow:var(–shadow-md);z-index:1}
+.card-head{display:flex;align-items:stretch;border-bottom:1px solid var(–gray-100)}
+.card-ab{width:4px;flex-shrink:0}
+.card-ab.s-執行中{background:var(–green)}
+.card-ab.s-待開發中{background:var(–blue)}
+.card-ab.s-規劃中{background:var(–purple)}
+.card-ab.s-暫停{background:var(–orange)}
+.card-ab.s-完成{background:var(–gray-300)}
+.card-hc{flex:1;display:flex;align-items:center;justify-content:space-between;padding:10px 13px 10px 12px;gap:8px;min-height:50px}
+.card-id{font-family:var(–mono);font-size:11px;font-weight:600;color:var(–gray-400);flex-shrink:0;background:var(–gray-50);padding:2px 7px;border:1px solid var(–gray-200);border-radius:2px}
+.card-title{font-size:13px;font-weight:600;color:var(–ink);line-height:1.4;flex:1;padding:0 8px}
+.schip{flex-shrink:0;border-radius:2px;font-size:9px;font-weight:700;padding:3px 7px;white-space:nowrap;letter-spacing:.04em}
+.sc-執行中{background:var(–green-tint);color:var(–green);border:1px solid var(–green)}
+.sc-待開發中{background:var(–blue-tint);color:var(–blue);border:1px solid var(–blue)}
+.sc-規劃中{background:var(–purple-tint);color:var(–purple);border:1px solid var(–purple)}
+.sc-暫停{background:var(–orange-tint);color:var(–orange);border:1px solid var(–orange)}
+.sc-完成{background:var(–gray-100);color:var(–gray-400);border:1px solid var(–gray-200)}
+.card-body{padding:12px 13px 12px 16px;flex:1}
+.card-axis{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(–red);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.card-axis::before{content:’’;width:3px;height:3px;border-radius:50%;background:var(–red);flex-shrink:0}
+.card-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px}
+.mi{display:flex;flex-direction:column;gap:2px}
+.mk{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(–gray-300)}
+.mv{font-size:12px;color:var(–ink);font-weight:500;line-height:1.4}
+.card-detail{margin-bottom:8px}
+.cd-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(–gray-300);margin-bottom:3px}
+.cd-val{font-size:12px;color:var(–gray-500);line-height:1.6;border-left:2px solid var(–gray-200);padding-left:8px}
+.cd-val.highlight{border-left-color:var(–blue);background:var(–blue-pale);padding:4px 8px;color:var(–blue)}
+.card-notes{font-size:11px;color:var(–gray-400);margin-top:8px;padding-top:8px;border-top:1px dashed var(–gray-200);line-height:1.65}
+.card-foot{display:flex;align-items:center;justify-content:space-between;padding:8px 13px 8px 16px;border-top:1px solid var(–gray-100);background:var(–gray-50)}
+.owner-tag{font-size:11px;font-weight:700;color:var(–ink);background:var(–white);border:1px solid var(–gray-200);padding:3px 9px;border-radius:2px}
+.card-acts{display:flex;gap:5px}
+
+/* EMPTY */
+.empty-s{grid-column:1/-1;text-align:center;padding:60px 20px;background:var(–white)}
+.empty-s-icon{font-size:32px;opacity:.2;margin-bottom:10px;display:block;font-family:var(–mono)}
+.empty-s-text{font-size:12px;color:var(–gray-400)}
+
+/* TABLE */
+.admin-toolbar{display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.table-wrap{border:1px solid var(–gray-200);background:var(–white);overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+thead tr{background:var(–black)}
+thead th{padding:9px 12px;text-align:left;font-size:9px;font-weight:700;color:var(–gray-300);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+thead th:first-child{border-left:3px solid var(–red)}
+tbody tr{border-bottom:1px solid var(–gray-100);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(–gray-50)}
+tbody td{padding:9px 12px;font-size:12px;vertical-align:top}
+tbody td:first-child{border-left:3px solid transparent}
+tbody tr:hover td:first-child{border-left-color:var(–red)}
+.td-id{font-family:var(–mono);font-size:11px;color:var(–gray-400);white-space:nowrap}
+.td-axis{font-size:11px;color:var(–red);font-weight:600;max-width:100px;line-height:1.4}
+.td-push{font-size:11px;color:var(–ink);font-weight:600;max-width:110px;line-height:1.4}
+.td-title{font-weight:600;max-width:160px;line-height:1.4;font-size:12px}
+.td-point{font-size:11px;color:var(–gray-500);max-width:200px;line-height:1.5}
+.td-mech{font-size:11px;color:var(–gray-500);max-width:150px;line-height:1.5}
+.td-owner{display:inline-block;border:1px solid var(–gray-200);padding:2px 7px;font-size:10px;font-weight:700;background:var(–gray-50);color:var(–ink);border-radius:2px;white-space:nowrap}
+.td-acts{display:flex;gap:5px;white-space:nowrap}
+.td-notes{font-size:10px;color:var(–gray-400);max-width:150px;line-height:1.5}
+
+/* LOG */
+.log-wrap{background:var(–white);border:1px solid var(–gray-200);max-width:700px}
+.log-hdr{padding:13px 18px;border-bottom:1px solid var(–gray-200)}
+.log-hdr-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(–gray-400)}
+.log-body{padding:0 18px}
+.log-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(–gray-100)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;border:1.5px solid}
+.log-dot.add{background:var(–green-tint);border-color:var(–green)}
+.log-dot.edit{background:var(–blue-tint);border-color:var(–blue)}
+.log-dot.del{background:var(–red-tint);border-color:var(–red)}
+.log-msg{font-size:13px;color:var(–ink)}
+.log-time{font-size:10px;color:var(–gray-300);font-family:var(–mono);margin-top:2px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(–white);border:2px solid var(–black);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:6px 6px 0 var(–red);animation:mIn .22s cubic-bezier(.22,1,.36,1)}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}
+.modal-header{display:flex;align-items:stretch;border-bottom:1px solid var(–gray-200)}
+.m-bar{width:4px;background:var(–red);flex-shrink:0}
+.m-title{font-family:var(–serif);font-size:15px;font-weight:700;padding:0 18px;display:flex;align-items:center;flex:1;color:var(–ink)}
+.m-close{width:52px;border-left:1px solid var(–gray-200);background:transparent;border-top:none;border-right:none;border-bottom:none;color:var(–gray-400);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;height:52px;flex-shrink:0}
+.m-close:hover{background:var(–red-pale);color:var(–red)}
+.modal-body{padding:24px}
+.modal-footer{padding:14px 24px;border-top:1px solid var(–gray-200);display:flex;justify-content:flex-end;gap:9px;background:var(–gray-50)}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fgrp{display:flex;flex-direction:column;gap:5px}
+.fgrp.full{grid-column:1/-1}
+.flbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(–gray-500)}
+.flbl .req{color:var(–red)}
+.finput,.fsel,.ftextarea{background:var(–white);border:1px solid var(–gray-200);color:var(–ink);font-family:var(–sans);font-size:13px;padding:8px 11px;outline:none;width:100%;transition:border-color .12s;-webkit-appearance:none;border-radius:var(–r)}
+.finput:focus,.fsel:focus,.ftextarea:focus{border-color:var(–black)}
+.ftextarea{resize:vertical;min-height:72px}
+.fsel{background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘10’ height=‘6’ viewBox=‘0 0 10 6’%3E%3Cpath d=‘M1 1l4 4 4-4’ stroke=’%23888886’ stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 9px center;padding-right:28px;cursor:pointer}
+.fsec{grid-column:1/-1;border-top:1px solid var(–gray-100);padding-top:12px;margin-top:2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(–gray-300)}
+
+/* SETTINGS */
+.sp{background:var(–white);border:1px solid var(–gray-200);max-width:460px}
+.sp-hdr{background:var(–black);padding:14px 20px;display:flex;align-items:center;gap:9px}
+.sp-hdr-title{font-family:var(–serif);font-size:14px;font-weight:700;color:var(–white)}
+.sp-body{padding:20px}
+.sp-body p{font-size:12px;color:var(–gray-400);margin-bottom:16px;line-height:1.7}
+.pw-err{border-left:3px solid var(–red);background:var(–red-pale);padding:8px 12px;font-size:12px;color:var(–red);margin-bottom:12px;display:none}
+.pw-err.show{display:block}
+
+/* CONFIRM */
+.cmsg{font-size:15px;font-weight:600;color:var(–ink);margin-bottom:7px;font-family:var(–serif)}
+.csub{font-size:12px;color:var(–gray-400);line-height:1.6}
+.cwarn{background:var(–red-pale);border-left:3px solid var(–red);padding:9px 13px;margin-top:14px;font-size:12px;color:var(–red);line-height:1.6}
+
+/* GUEST NOTICE */
+.guest-notice{background:var(–off);border:1px solid var(–gray-200);border-left:4px solid var(–black);padding:11px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.gn-text{font-size:12px;color:var(–gray-500);line-height:1.6}
+.gn-text b{color:var(–ink)}.gn-text .lnk{color:var(–red);cursor:pointer;text-decoration:underline}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(–ink);color:var(–white);border-left:4px solid var(–gray-400);padding:10px 15px;font-size:12px;display:flex;align-items:center;gap:9px;box-shadow:var(–shadow-md);animation:tIn .22s ease;min-width:240px;border-radius:var(–r)}
+@keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.toast.success{border-left-color:var(–green)}.toast.error{border-left-color:var(–red)}.toast.info{border-left-color:var(–blue)}
+.ti{font-family:var(–mono);font-weight:700;font-size:13px;flex-shrink:0}
+
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(3,1fr)}.items-grid{grid-template-columns:1fr}.content{padding:16px}.page-banner{padding:16px}.fg{grid-template-columns:1fr}.login-wrap{grid-template-columns:1fr}.login-left{display:none}.axis-tabs{flex-wrap:wrap}}
+</style>
+
+</head>
+<body>
+
+<!-- LOGIN -->
+
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-left">
+      <div>
+        <div class="l-brand">
+          <div class="l-brand-icon">🛡️</div>
+          <div>
+            <div class="l-brand-name">職安衛推升項目管理系統</div>
+            <div style="font-size:9px;color:var(--gray-500);margin-top:1px;letter-spacing:.05em">OSH INITIATIVE TRACKING SYSTEM</div>
+          </div>
+        </div>
+        <div class="l-headline">系統化追蹤<br><em>每一項安全推升項目</em></div>
+        <div class="l-tagline">整合五大軸向議題，即時掌握各項目執行狀態、<br>負責人與查核機制，全面強化工安管理能力。</div>
+      </div>
+      <div class="l-foot">OSH INITIATIVE MANAGEMENT · ENTERPRISE EDITION</div>
+    </div>
+    <div class="login-right">
+      <div class="lr-title">進入系統</div>
+      <div class="lr-sub">請選擇身份後繼續</div>
+      <div class="l-tabs">
+        <button class="l-tab active" onclick="switchTab('guest')">訪客瀏覽</button>
+        <button class="l-tab" onclick="switchTab('admin')">管理員</button>
+      </div>
+      <div class="lf-guest show" id="lf-guest">
+        <div class="perm-box">
+          <div class="perm-box-title">訪客權限說明</div>
+          <div class="perm-item ok">瀏覽所有推升項目與狀態</div>
+          <div class="perm-item ok">依五大軸向/Owner/狀態篩選</div>
+          <div class="perm-item ok">匯出 Excel 報表</div>
+          <div class="perm-item no">新增、編輯、刪除項目</div>
+          <div class="perm-item no">管理後台與操作記錄</div>
+        </div>
+        <button class="l-btn guest" onclick="enterAsGuest()">以訪客身份進入</button>
+      </div>
+      <div class="lf-admin" id="lf-admin">
+        <div class="ff">
+          <label>管理員密碼</label>
+          <input type="password" id="admin-pw-input" placeholder="請輸入管理員密碼" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="l-err" id="login-error">密碼錯誤，請重新輸入。</div>
+        <button class="l-btn admin" onclick="doLogin()">登入管理後台</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+
+<nav class="nav" id="main-nav">
+  <div class="nav-brand">
+    <div class="nb-icon">🛡️</div>
+    <div>
+      <div class="nb-text">職安衛推升管理</div>
+      <div class="nb-sub">OSH INITIATIVE TRACKING</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">項目總覽</button>
+    <button class="nav-tab admin-only" onclick="showPage('admin')">管理後台</button>
+    <button class="nav-tab admin-only" onclick="showPage('log')">操作記錄</button>
+    <button class="nav-tab admin-only" onclick="showPage('settings')">系統設定</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-role guest" id="role-badge"><span class="dot"></span><span id="role-lbl">訪客</span></div>
+    <button class="nav-logout" onclick="logout()">登出</button>
+  </div>
+</nav>
+
+<div class="main" id="main-app">
+
+  <!-- DASHBOARD -->
+
+  <div id="page-dashboard" class="page active">
+    <div class="page-banner">
+      <div class="pb-left">
+        <div class="pb-bar"></div>
+        <div><div class="pb-eye">Dashboard</div><div class="pb-title">推升項目總覽</div><div class="pb-sub" id="todayLabel"></div></div>
+      </div>
+      <div class="pb-actions">
+        <button class="btn btn-xls" onclick="exportExcel()">↓ 匯出 Excel</button>
+        <button class="btn btn-blk" id="btn-add" onclick="openAddModal()" style="display:none">＋ 新增項目</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="guest-notice" id="guest-notice" style="display:none">
+        <span style="font-size:14px;color:var(--gray-400)">ℹ</span>
+        <div class="gn-text">您目前以<b>訪客身份</b>瀏覽，可查看所有項目並匯出報表，但無法新增或修改項目。如需操作，請<span class="lnk" onclick="logout()">重新登入為管理員</span>。</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card s-total" onclick="filterByStatus('')"><div class="stat-num" id="s-total">0</div><div class="stat-label">項目總數</div></div>
+        <div class="stat-card s-exec" onclick="filterByStatus('執行中')"><div class="stat-num" id="s-exec">0</div><div class="stat-label">執行中</div></div>
+        <div class="stat-card s-pending" onclick="filterByStatus('待開發中')"><div class="stat-num" id="s-pending">0</div><div class="stat-label">待開發中</div></div>
+        <div class="stat-card s-dev" onclick="filterByStatus('規劃中')"><div class="stat-num" id="s-dev">0</div><div class="stat-label">規劃中</div></div>
+        <div class="stat-card s-plan" onclick="filterByStatus('完成')"><div class="stat-num" id="s-plan">0</div><div class="stat-label">完成</div></div>
+      </div>
+      <div class="axis-tabs" id="axis-tabs">
+        <button class="axis-tab active" onclick="filterByAxis('')">全部軸向</button>
+      </div>
+      <div class="filter-bar">
+        <span class="fl">篩選</span><div class="fdiv"></div>
+        <input type="text" id="db-search" placeholder="搜尋項目名稱、重點…" oninput="renderDashboard()">
+        <select id="db-owner" onchange="renderDashboard()"><option value="">全部 Owner</option></select>
+        <select id="db-status" onchange="renderDashboard()">
+          <option value="">全部狀態</option>
+          <option value="執行中">執行中</option>
+          <option value="待開發中">待開發中</option>
+          <option value="規劃中">規劃中</option>
+          <option value="完成">完成</option>
+          <option value="暫停">暫停</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">重置</button>
+        <div class="filter-count">顯示 <b id="db-count">0</b> / <b id="db-total">0</b> 項</div>
+      </div>
+      <div class="items-grid" id="dashboard-grid"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+
+  <div id="page-admin" class="page">
+    <div class="page-banner">
+      <div class="pb-left"><div class="pb-bar"></div><div><div class="pb-eye">Administration</div><div class="pb-title">管理後台</div><div class="pb-sub">新增、編輯、刪除推升項目</div></div></div>
+      <div class="pb-actions">
+        <button class="btn btn-xls" onclick="exportExcel()">↓ 匯出 Excel</button>
+        <button class="btn btn-blk" onclick="openAddModal()">＋ 新增項目</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="admin-toolbar">
+        <input type="text" class="finput" style="width:240px" id="admin-search" placeholder="搜尋…" oninput="renderAdmin()">
+        <select id="admin-axis" class="fsel" style="width:auto" onchange="renderAdmin()"><option value="">全部軸向</option></select>
+        <select id="admin-status" class="fsel" style="width:auto" onchange="renderAdmin()">
+          <option value="">全部狀態</option>
+          <option value="執行中">執行中</option><option value="待開發中">待開發中</option>
+          <option value="規劃中">規劃中</option><option value="完成">完成</option><option value="暫停">暫停</option>
+        </select>
+        <span style="margin-left:auto;font-size:11px;color:var(--gray-400)">共 <b id="admin-count" style="color:var(--ink);font-family:var(--mono)">0</b> 筆</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>項次</th><th>五大軸向</th><th>推升項目</th><th>項目</th><th>項目重點</th>
+            <th>現況查核機制</th><th>未來查核機制</th><th>Owner</th><th>目前狀況</th><th>備註</th><th>操作</th>
+          </tr></thead>
+          <tbody id="admin-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+
+  <div id="page-log" class="page">
+    <div class="page-banner">
+      <div class="pb-left"><div class="pb-bar"></div><div><div class="pb-eye">Audit Trail</div><div class="pb-title">操作記錄</div><div class="pb-sub">完整操作歷程紀錄</div></div></div>
+      <div class="pb-actions"><button class="btn btn-ghost btn-sm" onclick="if(confirm('確定清除所有記錄？')){logs=[];saveLogs();renderLog()}">清除記錄</button></div>
+    </div>
+    <div class="content">
+      <div class="log-wrap">
+        <div class="log-hdr"><div class="log-hdr-lbl">最新操作在最上方</div></div>
+        <div class="log-body" id="log-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+
+  <div id="page-settings" class="page">
+    <div class="page-banner">
+      <div class="pb-left"><div class="pb-bar"></div><div><div class="pb-eye">System</div><div class="pb-title">系統設定</div><div class="pb-sub">管理員密碼設定</div></div></div>
+    </div>
+    <div class="content">
+      <div class="sp">
+        <div class="sp-hdr"><span style="color:var(--red);font-size:15px">🔐</span><div class="sp-hdr-title">修改管理員密碼</div></div>
+        <div class="sp-body">
+          <p>修改後請務必記住新密碼，密碼儲存於本機瀏覽器，建議設定包含英數字組合的強式密碼。</p>
+          <div class="fgrp" style="margin-bottom:13px"><label class="flbl">目前密碼</label><input type="password" class="finput" id="pw-current" placeholder="輸入目前密碼"></div>
+          <div class="fgrp" style="margin-bottom:13px"><label class="flbl">新密碼 <span style="color:var(--red)">*</span></label><input type="password" class="finput" id="pw-new" placeholder="至少 6 個字元"></div>
+          <div class="fgrp" style="margin-bottom:16px"><label class="flbl">確認新密碼 <span style="color:var(--red)">*</span></label><input type="password" class="finput" id="pw-confirm" placeholder="再次輸入新密碼"></div>
+          <div class="pw-err" id="pw-error"></div>
+          <button class="btn btn-blk" onclick="changePassword()">儲存新密碼</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ITEM -->
+
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="m-bar"></div>
+      <div class="m-title" id="modal-title">新增推升項目</div>
+      <button class="m-close" onclick="closeModal('modal-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp"><label class="flbl">項次 <span class="req">*</span></label><input type="text" class="finput" id="f-id" placeholder="如：1-1、2-3"></div>
+        <div class="fgrp"><label class="flbl">目前狀況 <span class="req">*</span></label>
+          <select class="fsel" id="f-status">
+            <option value="執行中">執行中</option><option value="待開發中">待開發中</option>
+            <option value="規劃中">規劃中</option><option value="完成">完成</option><option value="暫停">暫停</option>
+          </select>
+        </div>
+        <div class="fgrp"><label class="flbl">五大軸向議題 <span class="req">*</span></label>
+          <select class="fsel" id="f-axis">
+            <option value="安全文化、意識提升">安全文化、意識提升</option>
+            <option value="硬體升級、健康守護">硬體升級、健康守護</option>
+            <option value="消除思維、工法革新">消除思維、工法革新</option>
+            <option value="科技輔助、AI賦能">科技輔助、AI賦能</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="fgrp"><label class="flbl">推升項目 <span class="req">*</span></label><input type="text" class="finput" id="f-push" placeholder="推升項目名稱"></div>
+        <div class="fgrp full"><label class="flbl">項目 <span class="req">*</span></label><input type="text" class="finput" id="f-title" placeholder="項目名稱"></div>
+        <div class="fgrp full"><label class="flbl">項目重點</label><textarea class="ftextarea" id="f-point" placeholder="說明此項目的重點內容…"></textarea></div>
+        <div class="fgrp full"><label class="flbl">現況查核機制</label><textarea class="ftextarea" id="f-current-mech" placeholder="目前的查核方式…"></textarea></div>
+        <div class="fgrp full"><label class="flbl">未來查核機制</label><textarea class="ftextarea" id="f-future-mech" placeholder="未來規劃的查核方式…"></textarea></div>
+        <div class="fgrp"><label class="flbl">Owner <span class="req">*</span></label><input type="text" class="finput" id="f-owner" placeholder="負責人姓名"></div>
+        <div class="fgrp full"><label class="flbl">備註</label><textarea class="ftextarea" id="f-notes" placeholder="補充說明、相關部門、注意事項…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-item')">取消</button>
+      <button class="btn btn-blk" id="modal-save-btn" onclick="saveItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRM -->
+
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="m-bar"></div>
+      <div class="m-title" id="confirm-title">確認操作</div>
+      <button class="m-close" onclick="closeModal('modal-confirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="cmsg" id="confirm-msg"></div>
+      <div class="csub" id="confirm-sub"></div>
+      <div class="cwarn" id="confirm-warn" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">取消</button>
+      <button class="btn" id="confirm-ok-btn" onclick="confirmAction()">確認</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ── AUTH ──────────────────────────────────────
+const DEFAULT_PW='admin1234';
+let currentRole=null;
+function getPW(){return localStorage.getItem('osh2_pw')||DEFAULT_PW}
+function switchTab(t){
+  document.querySelectorAll('.l-tab').forEach((el,i)=>el.classList.toggle('active',['guest','admin'][i]===t));
+  document.getElementById('lf-guest').classList.toggle('show',t==='guest');
+  document.getElementById('lf-admin').classList.toggle('show',t==='admin');
+  document.getElementById('login-error').classList.remove('show');
+}
+function enterAsGuest(){currentRole='guest';enterApp()}
+function doLogin(){
+  const pw=document.getElementById('admin-pw-input').value;
+  if(pw===getPW()){currentRole='admin';document.getElementById('admin-pw-input').value='';enterApp()}
+  else{document.getElementById('login-error').classList.add('show');document.getElementById('admin-pw-input').select()}
+}
+function enterApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').classList.add('visible');
+  applyRole();init();
+}
+function logout(){
+  currentRole=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-app').classList.remove('visible');
+  document.getElementById('admin-pw-input').value='';
+  document.getElementById('login-error').classList.remove('show');
+  currentAxisFilter='';currentStatusFilter='';
+  showPage('dashboard');
+}
+function applyRole(){
+  const isAdmin=currentRole==='admin';
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display=isAdmin?'flex':'none');
+  const b=document.getElementById('role-badge');
+  b.className='nav-role '+(isAdmin?'admin':'guest');
+  document.getElementById('role-lbl').textContent=isAdmin?'管理員':'訪客';
+  document.getElementById('btn-add').style.display=isAdmin?'inline-flex':'none';
+  document.getElementById('guest-notice').style.display=isAdmin?'none':'flex';
+}
+function changePassword(){
+  const cur=document.getElementById('pw-current').value;
+  const nw=document.getElementById('pw-new').value;
+  const cf=document.getElementById('pw-confirm').value;
+  const e=document.getElementById('pw-error');e.classList.remove('show');
+  if(cur!==getPW()){e.textContent='目前密碼錯誤。';e.classList.add('show');return}
+  if(nw.length<6){e.textContent='新密碼至少需要 6 個字元。';e.classList.add('show');return}
+  if(nw!==cf){e.textContent='兩次密碼不一致。';e.classList.add('show');return}
+  localStorage.setItem('osh2_pw',nw);
+  ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
+  toast('管理員密碼已成功修改','success');addLog('edit','修改管理員密碼');
+}
+
+// ── DATA ──────────────────────────────────────
+let items=[], logs=[];
+let currentAxisFilter='', currentStatusFilter='';
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+const AXIS_COLORS={
+  '安全文化、意識提升':'#c0112e',
+  '硬體升級、健康守護':'#16603a',
+  '消除思維、工法革新':'#b84e00',
+  '科技輔助、AI賦能':'#0e3d9e',
+  '其他':'#5a5a58'
+};
+
+function defaultItems(){
+  return [
+    {id:'i1',itemId:'1-1',axis:'安全文化、意識提升',push:'一次工具箱會議',title:'所有入廠施工',point:'PPE配戴及體溫稽查核',currentMech:'當日標籤管制(特區)',futureMech:'',owner:'嚴千媄',status:'執行中',notes:''},
+    {id:'i2',itemId:'1-2',axis:'安全文化、意識提升',push:'提升警勤的專業',title:'納入TSMC 實體安全規範標準',point:'TSMC直接發包',currentMech:'CPSD督導查核',futureMech:'',owner:'林君穎',status:'執行中',notes:''},
+    {id:'i3',itemId:'1-3',axis:'安全文化、意識提升',push:'提高見警率',title:'增設區域安全監控能力、增設樓管安管人力',point:'增加專業安全督導人員駐點(各專案約增加30人)',currentMech:'全面設置及增補人力',futureMech:'',owner:'林君穎',status:'執行中',notes:'已制定護欄標準原則'},
+    {id:'i4',itemId:'1-4',axis:'安全文化、意識提升',push:'每週承攬商檢討機制',title:'現場安全CM會議',point:'工地日常查核檢討會議',currentMech:'NFSD執行中、安全績效檢討通報',futureMech:'',owner:'顏平和',status:'執行中',notes:''},
+    {id:'i5',itemId:'1-5',axis:'安全文化、意識提升',push:'每週承攬商檢討機制',title:'承攬商高階主管檢討會議',point:'依據工地安全檢討通報、嚴重缺失承攬商高階主管檢討',currentMech:'MM執行中',futureMech:'',owner:'蘇荺潔/顏平和',status:'執行中',notes:''},
+    {id:'i6',itemId:'1-6',axis:'安全文化、意識提升',push:'二次工具箱會議',title:'七大高風險作業',point:'施工前申請高風險作業、須具備作業程序書',currentMech:'人工巡查',futureMech:'作業程序管制、介面查核管理',owner:'蘇荺潔',status:'待開發中',notes:'程序管制URD: NFSD、程序管制平台開發: IT'},
+    {id:'i7',itemId:'1-7',axis:'安全文化、意識提升',push:'安全教育',title:'16門課程依工種及角色訓練',point:'2年期的回訓機制、人資資料庫完訓建檔',currentMech:'發展必要項目、人工抽查',futureMech:'逾期事前警示/到期鎖卡',owner:'蘇荺潔',status:'待開發中',notes:'課程開發: ESH、資料庫自動化: IT'},
+    {id:'i8',itemId:'1-8',axis:'安全文化、意識提升',push:'體感訓練',title:'9項體感設施',point:'年度規劃(家屬、長官、同儕...)',currentMech:'發展必要項目、人工抽查',futureMech:'逾期事前警示/到期鎖卡',owner:'黃世嘉',status:'待開發中',notes:'課程開發: NFSD、資料庫自動化: IT'},
+    {id:'i9',itemId:'2-1',axis:'硬體升級、健康守護',push:'現場標示識別',title:'高風險施工區、休息區、廁所、人車動線...',point:'依照ISO7010及ISO3864安全標誌制定規範',currentMech:'NFSD執行中',futureMech:'',owner:'楊書修',status:'執行中',notes:''},
+    {id:'i10',itemId:'2-2',axis:'硬體升級、健康守護',push:'人車分道',title:'實體區隔(圍籬、A字形護欄、GIP護欄)',point:'維持淨空、無擺放物料',currentMech:'尖峰時段人車交織區增補交管人力',futureMech:'',owner:'CD-1 李文傑',status:'執行中',notes:''},
+    {id:'i11',itemId:'2-3',axis:'硬體升級、健康守護',push:'陶壁連體浴廁',title:'陶壁連體浴廁',point:'工作動線評估、勞資雙方簽署派工同意書',currentMech:'NFSD執行中',futureMech:'',owner:'嚴千媄',status:'執行中',notes:''},
+    {id:'i12',itemId:'2-4',axis:'硬體升級、健康守護',push:'車輛主動防護',title:'營建系車輛機械',point:'360度環景影像、環景警示燈、倒車雷達、導車顯影、倒車警示蜂鳴、防撞護欄',currentMech:'NFSD執行中、入廠必要項目',futureMech:'',owner:'CD-2 吳文德',status:'執行中',notes:''},
+    {id:'i13',itemId:'2-5',axis:'硬體升級、健康守護',push:'開口防護',title:'樓板開口、吊裝平台開口、電梯井、CR吊裝開口、CR天花板開口、MEP檢修開口',point:'每日檢點維護、水平及立面安全網、踏板處、危險標示、O型環、小型開口與肇事孔、樓梯踏板弱後開口防護工法',currentMech:'人工巡查',futureMech:'作業程序管制、介面查核管理',owner:'李俊霆',status:'待開發中',notes:'程序管制URD: NFSD'},
+    {id:'i14',itemId:'2-6',axis:'硬體升級、健康守護',push:'吊掛作業防護',title:'全吊車吊掛作業',point:'QR管制、動工/工安全程監督',currentMech:'人工巡查',futureMech:'作業程序管制、介面查核管理',owner:'李俊霆',status:'待開發中',notes:'程序管制URD: NFSD、程序管制平台開發'},
+    {id:'i15',itemId:'3-1',axis:'消除思維、工法革新',push:'空調模組工程',title:'PCW、空調箱模組預組',point:'場外預組後運到現場組裝',currentMech:'NFCD查核',futureMech:'',owner:'林義凱',status:'執行中',notes:''},
+    {id:'i16',itemId:'3-2',axis:'消除思維、工法革新',push:'冷卻水塔工程',title:'冷卻水塔工程預組',point:'冷卻水塔在地組裝後，吊接至RF冷卻水塔組裝',currentMech:'NFCD Sponsor Lvl施工現場監督、現場即時攝影監視',futureMech:'',owner:'林義凱',status:'執行中',notes:''},
+    {id:'i17',itemId:'4-1',axis:'科技輔助、AI賦能',push:'AI影像監視',title:'AI影像監視(PPE完善性、區域破壞、違規作業程序)',point:'監視攝影機全時紀錄',currentMech:'建置完整網路架構，收訊無死角，購買即時攝影機',futureMech:'人工網路訊號測試',owner:'廖志倫/鍾啟祥',status:'執行中',notes:'網路測試: IT、設備購買: NFSD'},
+  ];
+}
+
+function loadData(){
+  try{
+    const si=localStorage.getItem('osh2_items');
+    const sl=localStorage.getItem('osh2_logs');
+    items=si?JSON.parse(si):defaultItems();
+    logs=sl?JSON.parse(sl):[];
+  }catch(e){items=defaultItems();logs=[]}
+}
+function saveItems(){try{localStorage.setItem('osh2_items',JSON.stringify(items))}catch(e){}}
+function saveLogs(){try{localStorage.setItem('osh2_logs',JSON.stringify(logs))}catch(e){}}
+function addLog(type,msg){logs.unshift({type,msg,time:new Date().toLocaleString('zh-TW')});if(logs.length>300)logs.pop();saveLogs()}
+
+// ── UI ─────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['dashboard','admin','log','settings'][i]===name));
+  if(name==='dashboard')renderDashboard();
+  if(name==='admin')renderAdmin();
+  if(name==='log')renderLog();
+}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+function toast(msg,type='info'){
+  const icons={success:'✓',error:'✗',info:'i'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span class="ti">${icons[type]}</span>${msg}`;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(10px)';el.style.transition='all .28s';setTimeout(()=>el.remove(),300)},3000);
+}
+
+// ── AXIS TABS ──────────────────────────────────
+function buildAxisTabs(){
+  const axes=[...new Set(items.map(i=>i.axis))].sort();
+  const container=document.getElementById('axis-tabs');
+  let html=`<button class="axis-tab ${currentAxisFilter===''?'active':''}" onclick="filterByAxis('')">全部軸向</button>`;
+  axes.forEach(ax=>{
+    const color=AXIS_COLORS[ax]||'#5a5a58';
+    html+=`<button class="axis-tab ${currentAxisFilter===ax?'active':''}" onclick="filterByAxis('${ax}')" style="${currentAxisFilter===ax?`background:${color};color:#fff;border-color:${color}`:'color:'+color}">${ax}</button>`;
+  });
+  container.innerHTML=html;
+}
+function filterByAxis(ax){currentAxisFilter=ax;renderDashboard()}
+function filterByStatus(st){
+  currentStatusFilter=st;
+  document.getElementById('db-status').value=st;
+  renderDashboard();
+}
+
+// ── DASHBOARD ──────────────────────────────────
+function renderStats(){
+  document.getElementById('s-total').textContent=items.length;
+  document.getElementById('s-exec').textContent=items.filter(i=>i.status==='執行中').length;
+  document.getElementById('s-pending').textContent=items.filter(i=>i.status==='待開發中').length;
+  document.getElementById('s-dev').textContent=items.filter(i=>i.status==='規劃中').length;
+  document.getElementById('s-plan').textContent=items.filter(i=>i.status==='完成').length;
+}
+function renderDashboard(){
+  renderStats();buildAxisTabs();
+  const search=document.getElementById('db-search').value.toLowerCase();
+  const owner=document.getElementById('db-owner').value;
+  const status=document.getElementById('db-status').value||currentStatusFilter;
+
+  let f=items.filter(i=>{
+    if(currentAxisFilter&&i.axis!==currentAxisFilter)return false;
+    if(search&&!i.title.toLowerCase().includes(search)&&!i.point.toLowerCase().includes(search)&&!i.push.toLowerCase().includes(search))return false;
+    if(owner&&i.owner!==owner)return false;
+    if(status&&i.status!==status)return false;
+    return true;
+  });
+
+  const SO={'執行中':0,'待開發中':1,'規劃中':2,'完成':3,'暫停':4};
+  f.sort((a,b)=>{
+    const sa=SO[a.status]??99,sb=SO[b.status]??99;
+    if(sa!==sb)return sa-sb;
+    return a.itemId.localeCompare(b.itemId);
+  });
+
+  document.getElementById('db-count').textContent=f.length;
+  document.getElementById('db-total').textContent=items.length;
+
+  const grid=document.getElementById('dashboard-grid');
+  if(!f.length){grid.innerHTML=`<div class="empty-s"><span class="empty-s-icon">— ○ —</span><div class="empty-s-text">無符合條件之項目</div></div>`;return}
+
+  // Group by status
+  const groups={};
+  f.forEach(i=>{if(!groups[i.status])groups[i.status]=[];groups[i.status].push(i)});
+  const SC={'執行中':'var(--green)','待開發中':'var(--blue)','規劃中':'var(--purple)','完成':'var(--gray-300)','暫停':'var(--orange)'};
+  let html='';
+  ['執行中','待開發中','規劃中','完成','暫停'].forEach(s=>{
+    if(groups[s]){
+      html+=`<div class="sec-div" style="background:var(--off)">
+        <div class="sec-bar" style="background:${SC[s]}"></div>
+        <div class="sec-lbl" style="color:${SC[s]}">${s}</div>
+        <div class="sec-line"></div>
+        <div class="sec-cnt">${groups[s].length} 項</div>
+      </div>`;
+      html+=groups[s].map(renderCard).join('');
+    }
+  });
+  grid.innerHTML=html;
+}
+
+function renderCard(item){
+  const isAdmin=currentRole==='admin';
+  const axColor=AXIS_COLORS[item.axis]||'#5a5a58';
+  return`<div class="item-card">
+    <div class="card-head">
+      <div class="card-ab s-${item.status}"></div>
+      <div class="card-hc">
+        <span class="card-id">${item.itemId}</span>
+        <div class="card-title">${item.title}</div>
+        <span class="schip sc-${item.status}">${item.status}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-axis" style="color:${axColor}">${item.axis}</div>
+      <div class="card-meta">
+        <div class="mi"><div class="mk">推升項目</div><div class="mv">${item.push}</div></div>
+        <div class="mi"><div class="mk">Owner</div><div class="mv">${item.owner}</div></div>
+      </div>
+      ${item.point?`<div class="card-detail"><div class="cd-label">項目重點</div><div class="cd-val">${item.point}</div></div>`:''}
+      ${item.currentMech?`<div class="card-detail"><div class="cd-label">現況查核機制</div><div class="cd-val">${item.currentMech}</div></div>`:''}
+      ${item.futureMech?`<div class="card-detail"><div class="cd-label">未來查核機制</div><div class="cd-val highlight">${item.futureMech}</div></div>`:''}
+      ${item.notes?`<div class="card-notes">📌 ${item.notes}</div>`:''}
+    </div>
+    <div class="card-foot">
+      <span class="owner-tag">👤 ${item.owner}</span>
+      <div class="card-acts">
+        ${isAdmin?`<button class="bti e" title="編輯" onclick="openEditModal('${item.id}')">✏</button><button class="bti d" title="刪除" onclick="askDelete('${item.id}')">🗑</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── ADMIN TABLE ──────────────────────────────── 
+function renderAdmin(){
+  const search=document.getElementById('admin-search').value.toLowerCase();
+  const axis=document.getElementById('admin-axis').value;
+  const status=document.getElementById('admin-status').value;
+  let f=items.filter(i=>{
+    if(search&&!i.title.toLowerCase().includes(search)&&!i.push.toLowerCase().includes(search)&&!i.owner.toLowerCase().includes(search)&&!i.itemId.toLowerCase().includes(search))return false;
+    if(axis&&i.axis!==axis)return false;
+    if(status&&i.status!==status)return false;
+    return true;
+  });
+  f.sort((a,b)=>a.itemId.localeCompare(b.itemId));
+  document.getElementById('admin-count').textContent=f.length;
+  const SM={'執行中':'sc-執行中','待開發中':'sc-待開發中','規劃中':'sc-規劃中','完成':'sc-完成','暫停':'sc-暫停'};
+  const tbody=document.getElementById('admin-tbody');
+  if(!f.length){tbody.innerHTML=`<tr><td colspan="11" style="text-align:center;color:var(--gray-400);padding:36px;font-size:12px">無符合條件之項目</td></tr>`;return}
+  tbody.innerHTML=f.map(item=>`<tr>
+    <td class="td-id">${item.itemId}</td>
+    <td class="td-axis">${item.axis}</td>
+    <td class="td-push">${item.push}</td>
+    <td class="td-title">${item.title}</td>
+    <td class="td-point">${item.point||'—'}</td>
+    <td class="td-mech">${item.currentMech||'—'}</td>
+    <td class="td-mech">${item.futureMech||'—'}</td>
+    <td><span class="td-owner">${item.owner}</span></td>
+    <td><span class="schip ${SM[item.status]||''}" style="font-size:9px">${item.status}</span></td>
+    <td class="td-notes">${item.notes||'—'}</td>
+    <td><div class="td-acts">
+      <button class="bti e" title="編輯" onclick="openEditModal('${item.id}')">✏</button>
+      <button class="bti d" title="刪除" onclick="askDelete('${item.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+// ── LOG ───────────────────────────────────────
+function renderLog(){
+  const el=document.getElementById('log-list');
+  if(!logs.length){el.innerHTML=`<div style="padding:22px 0;color:var(--gray-300);font-size:12px">尚無操作記錄</div>`;return}
+  el.innerHTML=logs.map(l=>`<div class="log-item">
+    <div class="log-dot ${l.type}"></div>
+    <div><div class="log-msg">${l.msg}</div><div class="log-time">${l.time}</div></div>
+  </div>`).join('');
+}
+
+// ── EXCEL EXPORT ─────────────────────────────
+function exportExcel(){
+  const ds=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const hdr=['項次','五大軸向議題','推升項目','項目','項目重點','現況查核機制','未來查核機制','Owner','目前狀況','備註'];
+  const rows=items.map(i=>[i.itemId,i.axis,i.push,i.title,i.point,i.currentMech,i.futureMech,i.owner,i.status,i.notes]);
+  const wb=XLSX.utils.book_new();
+  const w1=XLSX.utils.aoa_to_sheet([hdr,...rows]);
+  w1['!cols']=[{wch:8},{wch:20},{wch:18},{wch:30},{wch:35},{wch:30},{wch:25},{wch:15},{wch:10},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,w1,'所有項目');
+
+  // By axis sheets
+  const axes=[...new Set(items.map(i=>i.axis))];
+  axes.forEach(ax=>{
+    const axItems=items.filter(i=>i.axis===ax);
+    const ws=XLSX.utils.aoa_to_sheet([hdr,...axItems.map(i=>[i.itemId,i.axis,i.push,i.title,i.point,i.currentMech,i.futureMech,i.owner,i.status,i.notes])]);
+    ws['!cols']=w1['!cols'];
+    XLSX.utils.book_append_sheet(wb,ws,ax.substring(0,12));
+  });
+
+  // Summary
+  const SC={'執行中':0,'待開發中':0,'規劃中':0,'完成':0,'暫停':0};
+  items.forEach(i=>{if(SC[i.status]!==undefined)SC[i.status]++});
+  const ownerCount={};items.forEach(i=>{ownerCount[i.owner]=(ownerCount[i.owner]||0)+1});
+  const sum=[
+    ['職安衛推升項目管理系統 — 匯出報表'],
+    ['匯出時間',new Date().toLocaleString('zh-TW')],[''],
+    ['【狀態統計】',''],
+    ['項目總數',items.length],
+    ...Object.entries(SC).map(([s,c])=>[s,c]),[''],
+    ['【五大軸向分布】',''],
+    ...axes.map(ax=>[ax,items.filter(i=>i.axis===ax).length]),[''],
+    ['【Owner 項目數】',''],
+    ...Object.entries(ownerCount).sort((a,b)=>b[1]-a[1]).map(([o,c])=>[o,c]),
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(sum);ws['!cols']=[{wch:30},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,'統計摘要');
+  XLSX.writeFile(wb,`職安衛推升項目報表_${ds}.xlsx`);
+  toast('Excel 報表匯出成功','success');
+  if(currentRole==='admin')addLog('edit','匯出 Excel 報表');
+}
+
+// ── ADD / EDIT ────────────────────────────────
+let editingId=null;
+function openAddModal(){
+  if(currentRole!=='admin'){toast('訪客無法新增項目','error');return}
+  editingId=null;
+  document.getElementById('modal-title').textContent='新增推升項目';
+  document.getElementById('modal-save-btn').textContent='新增';
+  clearForm();openModal('modal-item');
+}
+function openEditModal(id){
+  if(currentRole!=='admin'){toast('訪客無法編輯','error');return}
+  const item=items.find(i=>i.id===id);if(!item)return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='編輯項目';
+  document.getElementById('modal-save-btn').textContent='儲存變更';
+  document.getElementById('f-id').value=item.itemId;
+  document.getElementById('f-axis').value=item.axis;
+  document.getElementById('f-push').value=item.push;
+  document.getElementById('f-title').value=item.title;
+  document.getElementById('f-point').value=item.point||'';
+  document.getElementById('f-current-mech').value=item.currentMech||'';
+  document.getElementById('f-future-mech').value=item.futureMech||'';
+  document.getElementById('f-owner').value=item.owner;
+  document.getElementById('f-status').value=item.status;
+  document.getElementById('f-notes').value=item.notes||'';
+  openModal('modal-item');
+}
+function clearForm(){
+  ['f-id','f-push','f-title','f-point','f-current-mech','f-future-mech','f-owner','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-axis').value='安全文化、意識提升';
+  document.getElementById('f-status').value='執行中';
+}
+function saveItem(){
+  if(currentRole!=='admin'){toast('訪客無法操作','error');return}
+  const itemId=document.getElementById('f-id').value.trim();
+  const axis=document.getElementById('f-axis').value;
+  const push=document.getElementById('f-push').value.trim();
+  const title=document.getElementById('f-title').value.trim();
+  const point=document.getElementById('f-point').value.trim();
+  const currentMech=document.getElementById('f-current-mech').value.trim();
+  const futureMech=document.getElementById('f-future-mech').value.trim();
+  const owner=document.getElementById('f-owner').value.trim();
+  const status=document.getElementById('f-status').value;
+  const notes=document.getElementById('f-notes').value.trim();
+  if(!itemId){toast('請填寫項次','error');return}
+  if(!title){toast('請填寫項目名稱','error');return}
+  if(!owner){toast('請填寫 Owner','error');return}
+  if(editingId){
+    const idx=items.findIndex(i=>i.id===editingId);
+    if(idx>=0){items[idx]={...items[idx],itemId,axis,push,title,point,currentMech,futureMech,owner,status,notes};addLog('edit',`編輯項目：${itemId} ${title}`);toast('項目已更新','success')}
+  } else {
+    items.push({id:uid(),itemId,axis,push,title,point,currentMech,futureMech,owner,status,notes});
+    addLog('add',`新增項目：${itemId} ${title}（${axis}）`);toast('項目已新增','success');
+  }
+  saveItems();closeModal('modal-item');renderDashboard();renderAdmin();populateFilters();
+}
+
+// ── DELETE ────────────────────────────────────
+let pendingDelete=null;
+function askDelete(id){
+  if(currentRole!=='admin'){toast('訪客無法操作','error');return}
+  const item=items.find(i=>i.id===id);if(!item)return;
+  pendingDelete=id;
+  document.getElementById('confirm-title').textContent='確認刪除';
+  document.getElementById('confirm-msg').textContent=`刪除「${item.itemId} ${item.title}」？`;
+  document.getElementById('confirm-sub').textContent='此操作無法復原。';
+  const w=document.getElementById('confirm-warn');w.textContent='警告：資料一經刪除即無法恢復。';w.style.display='block';
+  const btn=document.getElementById('confirm-ok-btn');btn.textContent='確認刪除';btn.className='btn btn-red';
+  openModal('modal-confirm');
+}
+function confirmAction(){
+  if(!pendingDelete)return;
+  const item=items.find(i=>i.id===pendingDelete);
+  if(item){
+    const n=`${item.itemId} ${item.title}`;
+    items=items.filter(i=>i.id!==pendingDelete);
+    saveItems();addLog('del',`刪除項目：${n}`);toast(`已刪除：${n}`,'error');
+  }
+  pendingDelete=null;closeModal('modal-confirm');renderDashboard();renderAdmin();populateFilters();
+}
+
+// ── FILTERS ───────────────────────────────────
+function resetFilters(){
+  currentAxisFilter='';currentStatusFilter='';
+  ['db-search','db-owner','db-status'].forEach(id=>document.getElementById(id).value='');
+  renderDashboard();
+}
+function populateFilters(){
+  const owners=[...new Set(items.map(i=>i.owner))].sort();
+  const axes=[...new Set(items.map(i=>i.axis))].sort();
+  function fill(sid,opts){
+    const el=document.getElementById(sid);if(!el)return;
+    const cur=el.value,first=el.querySelector('option[value=""]');
+    el.innerHTML='';if(first)el.appendChild(first);
+    opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;el.appendChild(op)});
+    el.value=cur;
+  }
+  fill('db-owner',owners);fill('admin-axis',axes);
+}
+
+// ── INIT ──────────────────────────────────────
+function init(){
+  loadData();
+  const d=new Date();
+  document.getElementById('todayLabel').textContent=`${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日  ·  中華民國 ${d.getFullYear()-1911} 年`;
+  populateFilters();renderDashboard();
+}
+</script>
+
+</body>
+</html>
